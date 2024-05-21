@@ -11,6 +11,38 @@ function xmlFileList($dir)
     return $list;
 }
 
+function xmlGetDiff($dir, $difficulty)
+{
+    $list = [];
+
+    foreach (glob("$dir/*.xml") as $filename) {
+        $xml = new DOMDocument();
+        $xml->load($filename);
+
+        $root = $xml->documentElement;
+        $info = $root->getElementsByTagName('informace')->item(0);
+        $diff = $info->getElementsByTagName('obtížnost')->item(0);
+
+        if ($diff) {
+            $subtags = [];
+            foreach ($diff->childNodes as $node) {
+                if ($node->nodeType == XML_ELEMENT_NODE) {
+                    $subtags[] = $node->nodeName;
+                }
+            }
+            if (in_array($difficulty, $subtags)) {
+                $list[] = pathinfo($filename, PATHINFO_FILENAME); // Get the filename without the extension
+            }
+        }
+    }
+
+    return $list;
+}
+
+
+
+
+
 // výpis chyb
 function xmlPrintErrors()
 { ?>

@@ -1,45 +1,92 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<drink autor_článku="Pavel Beránek">
-    <informace>
-        <název>Mojito</název>
-        <země_původu>Kuba</země_původu>
-        <doba_přípravy 
-            jednotka="min">
-            1
-        </doba_přípravy>
-        <obtížnost>
-            <pokročilý />
-        </obtížnost>
-    </informace>
-  <ingredience>
-    <položka
-        typ="základ" 
-        množství="4" 
-        odkaz_koupě="https://www.alza.cz/havana-club-anejo-3y-0-7l-40-d6364551.htm">
-        Bílý rum
-    </položka>
-    <položka
-        typ="dochucovadlo" 
-        množství="4">
-        Limetková šťáva
-    </položka>
-    <položka
-        typ="dochucovadlo">
-        Sodovka
-    </položka>
-    <položka
-        typ="dekorace"
-        množství="6"
-        jednotka="lístků">
-        Máta
-    </položka>
-    <položka
-        množství="2"
-        jednotka="lžičky">
-        Třtinový cukr
-    </položka>
-  </ingredience>
-  <postup>
-    Nadrťte lístky máty s cukrem a limetkovou šťávou. Přidejte trochu sodovky a naplňte sklenici nadrceným ledem. Nalijte rum a dolijte sodovku. Podávejte s brčkem.
-  </postup>
-</drink>
+<?php
+// vypsat drinky:
+require '../prolog.php';
+require INC . '/html-begin.php';
+require INC . '/nav.php';
+require INC . '/xmlTools.php';
+require INC . '/db.php';
+
+// Function to extract unique difficulty levels from the XML files
+function extractDifficultyLevels()
+{
+    $difficultyLevels = array();
+    foreach (xmlFileList(DRINKS) as $basename) {
+        $difficulty = precteno($basename);
+        if (!in_array($difficulty, $difficultyLevels)) {
+            $difficultyLevels[] = $difficulty;
+        }
+    }
+    return $difficultyLevels;
+}
+
+// Get the selected difficulty level from the URL parameter
+$selectedDifficulty = isset($_GET['difficulty']) ? $_GET['difficulty'] : '';
+
+// Function to output a dropdown menu with difficulty levels
+function outputDifficultyFilter($selectedDifficulty)
+{
+    $difficultyLevels = extractDifficultyLevels();
+    echo '<select name="difficulty" onchange="location = this.value;" class="bg-gray-900 text-white">';
+    echo '<option value="?">Select Difficulty</option>';
+    foreach ($difficultyLevels as $level) {
+        $selected = ($level == $selectedDifficulty) ? 'selected' : '';
+        echo "<option value='?difficulty=$level' $selected>$level</option>";
+    }
+    echo '</select>';
+}
+
+?>
+
+<h1 class="py-6 text-center text-5xl text-white">Drinky</h1>
+
+<!-- Display the difficulty level filter -->
+<div class="flex justify-center mb-4">
+    <?php outputDifficultyFilter($selectedDifficulty); ?>
+</div>
+
+<div class="bg-gray-900 flex justify-center">
+    <ol class="fa-ul">
+        <?php
+        // Loop through drinks and display only those matching the selected difficulty level
+        foreach (xmlFileList(DRINKS) as $basename) {
+            // Read difficulty level of the drink
+            $difficulty = precteno($basename);
+            // If no difficulty is selected or the drink matches the selected difficulty, display it
+            if (!$selectedDifficulty || $selectedDifficulty == $difficulty) {
+        ?>
+                <li>
+                    <i class="fa fa-li fa-glass"></i>
+                    <a class="hover:underline text-white" href="?drink=<?= $basename ?>">
+                        <?= $basename ?> (<?= $difficulty ?>)
+                    </a>
+                </li>
+        <?php
+            }
+        }
+        ?>
+    </ol>
+</div>
+
+<section class="flex justify-center">
+    <?php
+    // zvolený drink:
+    if ($drink = @$_GET['drink']) {
+        if (TRANSFORM_SERVER_SIDE) { ?>
+            <?= xmlTransform(DRINKS . "/$drink.xml", XML . '/recept.xsl') ?>
+        <?php } else { ?>
+            <h2 id="nazev" class="text-center text-2xl m-4 text-white"></h2>
+            <script>
+                loadXML(
+                    "/serve/getDrink.php?drink=<?= $drink ?>",
+                    (xmlDom) => {
+                        // zde je možné pracovat s DOM ...
+                        document.getElementById("nazev").innerHTML =
+                            xmlDom.getElementsByTagName("název")[0].textContent;
+                        // ... atd.
+                    })
+            </script>
+    <?php }
+    } ?>
+</section>
+
+<?php require INC . '/html-end.php'; ?>
