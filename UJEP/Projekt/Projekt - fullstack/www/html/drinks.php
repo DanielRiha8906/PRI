@@ -10,6 +10,7 @@ require INC . '/db.php';
 
 <form class="text-center text-black" method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
         <select name="difficulty">
+            <option value="VŠE">Vše</option>
             <option value="začátečník">začátečník</option>
             <option value="pokročilý">Pokročilý</option>
             <option value="mistr">mistr</option>
@@ -20,21 +21,32 @@ require INC . '/db.php';
     <div class="bg-zinc-50 flex justify-center">
     <ol class="fa-ul">
     <?php
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Retrieve selected difficulty
         $selectedDifficulty = $_POST["difficulty"];
-         foreach (xmlGetDiff(DRINKS, $selectedDifficulty) as $basename) { ?>
+
+        if ($selectedDifficulty == 'VŠE') {
+            // Get all drinks
+            $drinks = xmlFileList(DRINKS);
+        } else {
+            // Get drinks based on selected difficulty
+            $drinks = xmlGetDiff(DRINKS, $selectedDifficulty);
+        }
+
+        // Loop through the list of drinks and display them
+        foreach ($drinks as $basename) { ?>
             <li>
                 <i class="fa fa-li fa-glass"></i>
-                <a class="hover:underline" href="?drink=<?= $basename ?>">
-                    <?= $basename ?> (<?= precteno($basename) ?>)
+                <a class="hover:underline" href="?drink=<?= htmlspecialchars($basename) ?>">
+                    <?= htmlspecialchars($basename) ?> (<?= htmlspecialchars(precteno($basename)) ?>)
                 </a>
-            </li> <?php
-        }
+            </li>
+        <?php }
     }
     ?>
     </ol>
 </div>
+
 
 <section class="flex justify-center">
     <?php // zvolený drink:
